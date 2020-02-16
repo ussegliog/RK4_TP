@@ -4,11 +4,13 @@
 # include <iostream>
 # include <string>
 
-using namespace std;
-
 # include "rk4_API.hpp"
 # include "rk4_IO.hpp"
 # include "rk4_FIFO.hpp"
+
+#ifdef WITH_MPI
+#include "mpi.h"
+#endif
 
 //****************************************************************************80
 
@@ -29,10 +31,18 @@ int main(int argc, char *argv[])
 //    This code is distributed under the GNU LGPL license. 
 //
 {
+
+  
+#ifdef WITH_MPI
+  // Initialize the MPI environment
+  MPI_Init(NULL, NULL);
+#endif
+
+  
   std::string inputTxt;
   std::string outputTxt;
   
-  // Check main inputs
+  // Check and retrieve main inputs 
   if (argc != 3)
     {
       std::cout << "Wrong number of arguments (at least two with the input and output files)" <<
@@ -46,26 +56,33 @@ int main(int argc, char *argv[])
       outputTxt = std::string(argv[2]);
     }
 
+  // Init some environment variables
+  int world_size = 1;
+  int rank = 0;
+  char processor_name[1024];
+  int name_len;
   
-  timestamp ( );
-  cout << "\n";
-  cout << "RK4_TEST\n";
-  cout << "  C++ version\n";
-  cout << "  Test the RK4 library.\n";  
+#ifdef WITH_MPI
+  // Get the number of processes
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   
+  // Get the rank of the process
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  // Get the name of the processor
+  MPI_Get_processor_name(processor_name, &name_len);
+#endif
+
+  std::cout << "world_size : " << world_size << std::endl;
+  std::cout << "rank : " << rank << std::endl;
 
   // Read input txt file
   RK4IO * rk4IO = new RK4IO(inputTxt, outputTxt);
   RK4FIFO * in_rk4Fifo = new RK4FIFO();
   RK4FIFO * out_rk4Fifo = new RK4FIFO();
 
-  std::cout << "Size of FIFO : " << in_rk4Fifo->getSize() << std::endl;
-  
   rk4IO->setInputFIFO(in_rk4Fifo);
-  rk4IO->readInputFile();
-
-  std::cout << "Size of FIFO : " << in_rk4Fifo->getSize() << std::endl;
-  
+  rk4IO->readInputFile();  
 
   int id = 0;
   double array [5];
@@ -98,15 +115,14 @@ int main(int argc, char *argv[])
   
 //
 //  Terminate.
-//
-  cout << "\n";
-  cout << "RK4_TEST\n";
-  cout << "  Normal end of execution.\n";
-  cout << "\n";
-  timestamp ( );
 
   delete rk4IO;
   rk4IO = 0;
+
+#ifdef WITH_MPI
+  // Finalize the MPI environment.
+  MPI_Finalize();
+#endif
   
   return 0;
 }

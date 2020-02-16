@@ -79,11 +79,6 @@ int RK4IO::readInputFile()
       pos = line.find(delim);
       array[4] = std::atof(line.substr(0, pos).c_str());
   
-      
-      std::cout << id <<  ", " << array[0] << ", " <<  array[1] << ", " << array[2] << ", "
-		<< array[3] << ", "
-		<< array[4] << std::endl;
-      
       // Put it into the input FIFO
       m_inputFIFO->addData(id, array);
     }

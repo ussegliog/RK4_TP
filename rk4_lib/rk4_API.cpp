@@ -98,16 +98,6 @@ void rk4_API (int id, double t0, double x0, double v0, double tmax, double dt,
   int i;
   int n = 2;
 
-  cout << "\n";
-  cout << "RK4VEC_TEST\n";
-  cout << "  RK4VEC takes a Runge Kutta step for a vector ODE.\n";
-
-  cout << "\n";
-  cout << "       T       U[0]       U[1]\n";
-  cout << "\n";
-
- 
-
   for ( ; ; )
   {
 
@@ -135,12 +125,6 @@ void rk4_API (int id, double t0, double x0, double v0, double tmax, double dt,
     delete [] u1;
   }
 
-  //
-  //  Print (T0,U0). // At the last iteration
-  //
-    cout << "  " << setw(14) << t0
-         << "  " << setw(14) << u0[0]
-         << "  " << setw(14) << u0[1] << "\n";
 
     // Assign output
     x1 = u0[0];
