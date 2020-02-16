@@ -76,49 +76,52 @@ int main(int argc, char *argv[])
   std::cout << "world_size : " << world_size << std::endl;
   std::cout << "rank : " << rank << std::endl;
 
-  // Read input txt file
-  RK4IO * rk4IO = new RK4IO(inputTxt, outputTxt);
-  RK4FIFO * in_rk4Fifo = new RK4FIFO();
-  RK4FIFO * out_rk4Fifo = new RK4FIFO();
-
-  rk4IO->setInputFIFO(in_rk4Fifo);
-  rk4IO->readInputFile();  
-
-  int id = 0;
-  double array [5];
-  double x1, v1;
-  double array_result [5];
-  
-  // Process all rk4Data
-  while (in_rk4Fifo->getSize() > 0)
+  if (rank == 0)
     {
-      // Get elt
-      in_rk4Fifo->getAndremoveData(id, array);
-    
-      // Process it
-      rk4_API (id, array[0], array[1], array[2], array[3], array[4], x1, v1);
+      // Read input txt file
+      RK4IO * rk4IO = new RK4IO(inputTxt, outputTxt);
+      RK4FIFO * in_rk4Fifo = new RK4FIFO();
+      RK4FIFO * out_rk4Fifo = new RK4FIFO();
 
-      // Assign results
-      array_result[0] = array[0];
-      array_result[1] = x1; // New X
-      array_result[2] = v1; // New V
-      array_result[3] = array[3];
-      array_result[4] = array[4];
-      
-      // Add result into output FIFO
-      out_rk4Fifo->addData(id, array_result);
-    }
+      rk4IO->setInputFIFO(in_rk4Fifo);
+      rk4IO->readInputFile();  
 
-  // Write ouput.txt
-  rk4IO->setOutputFIFO(out_rk4Fifo);
-  rk4IO->writeInputFile();
+      int id = 0;
+      double array [5];
+      double x1, v1;
+      double array_result [5];
   
-//
-//  Terminate.
+      // Process all rk4Data
+      while (in_rk4Fifo->getSize() > 0)
+	{
+	  // Get elt
+	  in_rk4Fifo->getAndremoveData(id, array);
+    
+	  // Process it
+	  rk4_API (id, array[0], array[1], array[2], array[3], array[4], x1, v1);
 
-  delete rk4IO;
-  rk4IO = 0;
+	  // Assign results
+	  array_result[0] = array[0];
+	  array_result[1] = x1; // New X
+	  array_result[2] = v1; // New V
+	  array_result[3] = array[3];
+	  array_result[4] = array[4];
+      
+	  // Add result into output FIFO
+	  out_rk4Fifo->addData(id, array_result);
+	}
 
+      // Write ouput.txt
+      rk4IO->setOutputFIFO(out_rk4Fifo);
+      rk4IO->writeInputFile();
+  
+      //
+      //  Terminate.
+
+      delete rk4IO;
+      rk4IO = 0;
+    }
+  
 #ifdef WITH_MPI
   // Finalize the MPI environment.
   MPI_Finalize();
