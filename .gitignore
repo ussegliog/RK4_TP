@@ -1,6 +1,7 @@
 build/*
-config.sh
 *~
 *.pyc
 .\#*
 \#*\#
+*.o
+*.e
