@@ -34,7 +34,6 @@ int main(int argc, char *argv[])
 //    This code is distributed under the GNU LGPL license. 
 //
 {
-
   
 #ifdef WITH_MPI
   // Initialize the MPI environment
@@ -64,7 +63,13 @@ int main(int argc, char *argv[])
   int rank = 0;
   char processor_name[1024];
   int name_len;
-  
+
+  // Allocation for FIFO and I/O handler
+  RK4FIFO * in_rk4Fifo = new RK4FIFO();
+  RK4FIFO * out_rk4Fifo = new RK4FIFO();
+  RK4IO * rk4IO;
+
+  // Declaration for MPI environment
 #ifdef WITH_MPI
   // Get the number of processes
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -74,18 +79,13 @@ int main(int argc, char *argv[])
   
   // Get the name of the processor
   MPI_Get_processor_name(processor_name, &name_len);
-#endif
-
-  std::cout << "world_size : " << world_size << std::endl;
-  std::cout << "rank : " << rank << std::endl;
-
-  RK4FIFO * in_rk4Fifo = new RK4FIFO();
-  RK4FIFO * out_rk4Fifo = new RK4FIFO();
-  RK4IO * rk4IO;
 
   MPISend_RK4 * mpiSender;
   MPIRecv_RK4 * mpiRecver;
+#endif
 
+
+  /////////////////// Input /////////////////////
   // I/O only on rank = 0 and send data to other ranks
   if (rank == 0)
     {
@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
       rk4IO->setInputFIFO(in_rk4Fifo);
       rk4IO->readInputFile();  
 
+#ifdef WITH_MPI
       std::vector<int> dest_processes;
       for (int i = 1; i < world_size; i++) 
 	{
@@ -106,9 +107,11 @@ int main(int argc, char *argv[])
       mpiSender->sendDataToDestProcesses();      
       
       dest_processes.clear();
+#endif
     }
   // If rank not 0 then receive rk4 data
-  else
+#ifdef WITH_MPI 
+ else
     {
       // From rank 0 only
       std::vector<int> src_processes;
@@ -117,13 +120,14 @@ int main(int argc, char *argv[])
       mpiRecver = new MPIRecv_RK4(in_rk4Fifo, &src_processes, rank);
       mpiRecver->recvDataFromSrcProcesses();
     }
+#endif
 
+
+  /////////////////// Process /////////////////////
   int id = 0;
   double array [5];
   double x1, v1;
   double array_result [5];
-
-  std::cout << "For Rank : " << rank << " FiFO In size : " << in_rk4Fifo->getSize() << std::endl;
   
   // Process rk4Data for current process
   while (in_rk4Fifo->getSize() > 0)
@@ -145,12 +149,12 @@ int main(int argc, char *argv[])
       out_rk4Fifo->addData(id, array_result);
     }
   
-  std::cout << "For Rank : " << rank << " FiFO Out size : " << out_rk4Fifo->getSize() << std::endl;
-
-
+  
+  /////////////////// Output /////////////////////
   // Receive output RK4 data and I/O only on rank = 0 
   if (rank == 0)
     {
+#ifdef WITH_MPI  
       // Receive data from all other processes
       std::vector<int> src_processes;
       for (int i = 1; i < world_size; i++) 
@@ -160,18 +164,18 @@ int main(int argc, char *argv[])
       mpiRecver = new MPIRecv_RK4(out_rk4Fifo, &src_processes, rank);
       mpiRecver->recvDataFromSrcProcesses();
       src_processes.clear();
+#endif
       
       // Write ouput.txt
       rk4IO->setOutputFIFO(out_rk4Fifo);
       rk4IO->writeInputFile();
   
-      //
       //  Terminate.
-
       delete rk4IO;
       rk4IO = 0;
     }
   // Send results to rank 0
+#ifdef WITH_MPI  
   else
     {
       std::vector<int> dest_processes;
@@ -182,19 +186,21 @@ int main(int argc, char *argv[])
       
       dest_processes.clear();
     }
-
+#endif
+  
   // Free Memory
   delete in_rk4Fifo;
   in_rk4Fifo = 0;
   delete out_rk4Fifo;
   out_rk4Fifo = 0;
-  
+
+
+#ifdef WITH_MPI  
   delete mpiSender;
   mpiSender = 0;
   delete mpiRecver;
   mpiRecver = 0;
 
-#ifdef WITH_MPI
   // Finalize the MPI environment.
   MPI_Finalize();
 #endif
