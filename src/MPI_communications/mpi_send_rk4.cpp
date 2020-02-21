@@ -53,8 +53,8 @@ void MPISend_RK4::sendDataToDestProcesses()
 {
   // Define chunk size
   // Avoid integer division and rounding to sup
-  int chunkSize = std::lrint(static_cast<float>(m_inputFIFO->getSize()/m_destProcesses->size())); 
-  int lastChunkSize = m_inputFIFO->getSize() - chunkSize;
+  int chunkSize = std::lrint(static_cast<float>(m_inputFIFO->getSize())/m_destProcesses->size()); 
+  int lastChunkSize = m_inputFIFO->getSize() - m_destProcesses->size()*chunkSize;
 
   if (m_destProcesses->size() == 1)
     {
@@ -82,17 +82,28 @@ void MPISend_RK4::sendDataToDestProcesses()
             
 	  for (int j = 0; j < numberOfElts; j++) 
 	    {
-	      // Get elt and fill id and array 
-	      m_inputFIFO->getAndremoveData(rk4_id[j], &rk4_array[j*size_RK4Array]);
+	      if (m_inputFIFO->getSize() > 0)
+		{
+		  // Get elt and fill id and array 
+		  m_inputFIFO->getAndremoveData(rk4_id[j], &rk4_array[j*size_RK4Array]);
+		}
+	      else
+		{
+		  // Change the number of Elts
+		  numberOfElts = j;
+		  break;
+		}
 	    }
 
 	  // Send size of the buffer 
 	  MPI_Ssend(&numberOfElts, 1, MPI_INT, m_destProcesses->at(i), 0, MPI_COMM_WORLD);
-
-	  // Send elt in two parts : id then array
-	  MPI_Ssend(rk4_id, numberOfElts, MPI_INT, m_destProcesses->at(i), 1, MPI_COMM_WORLD);
-	  MPI_Ssend(rk4_array, numberOfElts*size_RK4Array, MPI_DOUBLE, m_destProcesses->at(i), 1, 
-		    MPI_COMM_WORLD);
+	  if (numberOfElts > 0)
+	    {
+	      // Send elt in two parts : id then array
+	      MPI_Ssend(rk4_id, numberOfElts, MPI_INT, m_destProcesses->at(i), 1, MPI_COMM_WORLD);
+	      MPI_Ssend(rk4_array, numberOfElts*size_RK4Array, MPI_DOUBLE, m_destProcesses->at(i), 1, 
+			MPI_COMM_WORLD);
+	    }
 	}
       
     }

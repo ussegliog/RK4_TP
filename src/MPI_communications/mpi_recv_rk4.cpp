@@ -62,26 +62,29 @@ void MPIRecv_RK4::recvDataFromSrcProcesses()
       // Retrieve the size of data from current src process
       int numberOfElts = 0;
       MPI_Recv(&numberOfElts, 1, MPI_INT, m_srcProcesses->at(i), 0, MPI_COMM_WORLD, &status);
-    
-      // Allocation for rk4_id and rk4_array accoding to the numberOfElts
-      rk4_id = new int[numberOfElts];
-      rk4_array = new double[size_RK4Array*numberOfElts];
 
-      // Receive data for src process in two parts : id then array
-      MPI_Recv(rk4_id, numberOfElts, MPI_INT, m_srcProcesses->at(i), 1, MPI_COMM_WORLD, &status);
-      MPI_Recv(rk4_array, numberOfElts*size_RK4Array, MPI_DOUBLE, m_srcProcesses->at(i), 1, 
-	       MPI_COMM_WORLD, &status);
-      
-      // Add elts into the outputFIFO : one by one
-      for (int j = 0; j < numberOfElts; j++) 
+      if (numberOfElts > 0)
 	{
-	  m_outputFIFO->addData(rk4_id[j], &rk4_array[j*size_RK4Array]);
-	}
+	  // Allocation for rk4_id and rk4_array accoding to the numberOfElts
+	  rk4_id = new int[numberOfElts];
+	  rk4_array = new double[size_RK4Array*numberOfElts];
 
-      // Free Memory
-      delete rk4_id;
-      rk4_id = 0;
-      delete rk4_array;
-      rk4_array = 0;
+	  // Receive data for src process in two parts : id then array
+	  MPI_Recv(rk4_id, numberOfElts, MPI_INT, m_srcProcesses->at(i), 1, MPI_COMM_WORLD, &status);
+	  MPI_Recv(rk4_array, numberOfElts*size_RK4Array, MPI_DOUBLE, m_srcProcesses->at(i), 1, 
+		   MPI_COMM_WORLD, &status);
+      
+	  // Add elts into the outputFIFO : one by one
+	  for (int j = 0; j < numberOfElts; j++) 
+	    {
+	      m_outputFIFO->addData(rk4_id[j], &rk4_array[j*size_RK4Array]);
+	    }
+
+	  // Free Memory
+	  delete rk4_id;
+	  rk4_id = 0;
+	  delete rk4_array;
+	  rk4_array = 0;
+	}
     }
 }

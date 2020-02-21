@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
     }
 #endif
 
+  std::cout << "in_rk4Fifo->getSize() : " << in_rk4Fifo->getSize()  << " on processor_name : " << processor_name << " And rank : " << rank << std::endl;
 
   /////////////////// Process /////////////////////
   int id = 0;
