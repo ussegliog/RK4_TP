@@ -37,3 +37,9 @@ At the end of the execution, an output file is created with the same shape and u
 All sources are contained into src directory. 
 
 ![src directory : ](./files_ex/img/TP_RK4_src.png?raw=true "src/")
+
+## Docker container
+
+A docker container can be used to run this application. A small modification has to be made with OpenMPI by disabling the transport memory copy (from vader). The root cause is `process_vm_readv()/process_vm_writev()` are disabled in the default Docker seccomp profile which triggers a conflict with CMA (Cross Memory Attach) optimization. The easiest way to avoid that conflict is to set the `OMPI_MCA_btl_vader_single_copy_mechanism` environment variable to none. It is also possible to pass a custom seccomp security profile for the container : https://docs.docker.com/engine/security/seccomp/.
+
+See https://github.com/open-mpi/ompi/issues/4948
