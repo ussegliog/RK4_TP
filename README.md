@@ -31,7 +31,7 @@ A RK4Data is composed of :
 * An id
 * An array with 5 values : intial_time, x0 (position), v0 (velocity), last_time, time_step
 
-At the end of the execution, an output file is created with the same shape and updates the values for position and velocity estimated at the **last_time**.
+At the end of the execution, an output file is created with the updated values for position and velocity estimated at the **last_time**.
 
 # Src files
 All sources are contained into src directory. 
